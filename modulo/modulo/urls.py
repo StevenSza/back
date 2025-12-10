@@ -1,8 +1,6 @@
-from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
+from .views_templates import cliente_template
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/caso/', include('casos.api_urls')),
-    path('api/', include('casos.api_urls')),  # Para las rutas generales como abogados, ciudades
+    path('caso/', cliente_template, name='cliente_template'),
 ]
