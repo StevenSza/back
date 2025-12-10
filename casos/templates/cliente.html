@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gestión de Casos</title>
+    <style>
+        .fila { display: flex; gap: 10px; margin-bottom: 10px; }
+        .columna { display: flex; flex-direction: column; margin-right: 20px; }
+        input, select, button { padding: 5px; }
+        .mensaje { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Gestión de Casos</h1>
+
+    {% if mensaje %}
+        <p class="mensaje">{{ mensaje }}</p>
+    {% endif %}
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <!-- Buscar Cliente -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="buscar_cliente">
+        <div class="fila">
+            <input type="text" name="nombre" placeholder="Nombre" value="{{ request.POST.nombre }}">
+            <input type="text" name="apellido" placeholder="Apellido" value="{{ request.POST.apellido }}">
+            <button type="submit">Buscar 🔍</button>
+        </div>
+    </form>
+
+    {% if cliente %}
+    <h2>Cliente: {{ cliente.nom }} {{ cliente.ape }} - Documento: {{ cliente.doc }}</h2>
+
+    <!-- Crear Caso -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="crear_caso">
+        <input type="hidden" name="codcliente" value="{{ cliente.cod }}">
+        <input type="hidden" name="nomcliente" value="{{ cliente.nom }}">
+        <input type="hidden" name="apellcliente" value="{{ cliente.ape }}">
+        <button type="submit">Crear Nuevo Caso</button>
+    </form>
+
+    <!-- Seleccionar Caso -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="guardar_caso">
+        <input type="hidden" name="codcliente" value="{{ cliente.cod }}">
+        <div class="fila">
+            <label>No. Caso:</label>
+            <select name="nocaso">
+                {% for c in casos_cliente %}
+                    <option value="{{ c.nocaso }}" {% if caso_activo and c.nocaso == caso_activo.nocaso %}selected{% endif %}>
+                        Caso {{ c.nocaso }} {% if c.fin %}(Cerrado){% else %}(Activo){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="fila">
+            <label>Fecha Inicio:</label>
+            <input type="date" name="fechaInicio" value="{{ caso_activo.inicio|default:'' }}">
+        </div>
+
+        <div class="fila">
+            <label>Especialización:</label>
+            <select name="especializacion">
+                <option value="">Seleccione</option>
+                {% for esp in especializaciones %}
+                    <option value="{{ esp.codigo }}" {% if caso_activo and esp.codigo == caso_activo.esp %}selected{% endif %}>
+                        {{ esp.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="fila">
+            <label>Valor:</label>
+            <input type="number" name="valor" value="{{ caso_activo.valor|default:'' }}" step="0.01">
+        </div>
+
+        <button type="submit">Guardar Caso</button>
+    </form>
+    {% endif %}
+</body>
+</html>
