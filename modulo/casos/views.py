@@ -44,14 +44,12 @@ def buscar_cliente(request):
     }
     """
     try:
-        # Obtener datos del JSON
         nom = request.data.get("nomcliente", "").strip()
         ape = request.data.get("apellcliente", "").strip()
 
         if not (nom and ape):
             return Response({"error": "Debe ingresar nombre y apellido"}, status=400)
 
-        # Buscar cliente
         cliente = single_result("""
             SELECT CODCLIENTE, NOMCLIENTE, APECLIENTE, NDOCUMENTO
             FROM CLIENTE
@@ -64,7 +62,6 @@ def buscar_cliente(request):
 
         codcliente = cliente[0]
 
-        # Traer todos los casos del cliente
         casos = many_results("""
             SELECT NOCASO, CODESPECIALIZACION, FCHINICIO, FCHFIN, VALOR
             FROM CASO
@@ -79,11 +76,10 @@ def buscar_cliente(request):
                 "inicio": c[2].strftime("%Y-%m-%d") if c[2] else "",
                 "fin": c[3].strftime("%Y-%m-%d") if c[3] else None,
                 "valor": c[4],
-                "activo": (c[3] is None)  # activo si FCHFIN es NULL
+                "activo": (c[3] is None)
             } for c in casos
         ]
 
-        # Caso activo (si hay)
         caso_activo = next((c for c in casos_cliente if c["activo"]), None)
         if caso_activo:
             caso_activo = {
@@ -94,7 +90,6 @@ def buscar_cliente(request):
                 "es_nuevo": False
             }
 
-        # Respuesta final en JSON
         return Response({
             "cliente": {
                 "cod": codcliente,
@@ -108,7 +103,7 @@ def buscar_cliente(request):
 
     except Exception as e:
         import traceback
-        print(traceback.format_exc())  # imprime error completo en consola
+        print(traceback.format_exc())
         return Response({"error": "Ocurrió un error al buscar el cliente"}, status=500)
 
 @api_view(['POST'])
@@ -118,7 +113,6 @@ def crear_caso(request):
     if not codcli:
         return Response({"error": "Debe seleccionar un cliente"}, status=400)
 
-    # Consecutivo funcional: max(nocaso) + 1
     ultimo = single_result("SELECT NVL(MAX(NOCASO),0) FROM CASO")[0]
     nuevo_consec = ultimo + 1
 
@@ -145,7 +139,6 @@ def guardar_caso(request):
         return Response({"error": "Todos los campos son obligatorios"}, status=400)
 
     try:
-        # nocaso es número, los demás son strings
         nocaso = int(nocaso)
         execute("""
             INSERT INTO CASO (NOCASO, CODCLIENTE, CODESPECIALIZACION, FCHINICIO, FCHFIN, VALOR)
@@ -157,6 +150,7 @@ def guardar_caso(request):
         return Response({"error": f"Error al guardar el caso: {str(e)}"}, status=500)
 
     return Response({"mensaje": "Caso creado correctamente"})
+
 # ============================================================
 # EXPEDIENTES
 # ============================================================
@@ -180,7 +174,7 @@ def buscar_caso(request, nocaso):
     """, [nocaso])
 
     lista_expedientes = [
-        {"consec": e[0], "etapa": e[1], "lugar": e[2], "abogado": e[3], "fecha": e[4]}
+        {"consec": e[0], "etapa": e[1], "lugar": e[2], "abogado": e[3], "fecha": e[4].strftime("%Y-%m-%d") if e[4] else ""}
         for e in exps
     ]
 
@@ -189,8 +183,8 @@ def buscar_caso(request, nocaso):
             "nocaso": caso[0],
             "cliente": caso[1],
             "esp": caso[2],
-            "inicio": caso[3],
-            "fin": caso[4]
+            "inicio": caso[3].strftime("%Y-%m-%d") if caso[3] else "",
+            "fin": caso[4].strftime("%Y-%m-%d") if caso[4] else None
         },
         "lista_expedientes": lista_expedientes
     })
@@ -204,6 +198,35 @@ def get_ciudades(request):
     """)
     return Response([{"cod": c[0], "nom": c[1]} for c in ciudades])
 
+@api_view(['GET'])
+def get_entidades(request):
+    ciudad = request.GET.get("ciudad")
+    
+    if not ciudad:
+        return Response([])
+    
+    entidades = many_results("""
+        SELECT CODLUGAR, NOMLUGAR
+        FROM LUGAR
+        WHERE IDTIPOLUGAR = 'ENT' AND CODLUGAR_PADRE = %s
+    """, [ciudad])
+    
+    return Response([{"cod": e[0], "nom": e[1]} for e in entidades])
+
+@api_view(['GET'])
+def get_abogados(request):
+    esp = request.GET.get("esp")
+    query = """
+        SELECT A.CEDULA, A.NOMABOGADO, A.APEABOGADO
+        FROM ABOGADO A
+    """
+    params = []
+    if esp:
+        query += " JOIN ABOGADO_ESPECIALIZACION AE ON A.CEDULA = AE.CEDULA WHERE AE.CODESPECIALIZACION = %s"
+        params = [esp]
+    abogados = many_results(query, params)
+    return Response([{"ced": a[0], "nom": f"{a[1]} {a[2]}"} for a in abogados])
+
 @api_view(['POST'])
 def crear_expediente(request):
     nocaso = request.data.get("nocaso")
@@ -212,7 +235,6 @@ def crear_expediente(request):
     if not (nocaso and esp):
         return Response({"error": "Datos incompletos"}, status=400)
 
-    # Consecutivo del expediente
     ultimo = single_result("""
         SELECT NVL(MAX(CONSECEXPE),0)
         FROM EXPEDIENTE
@@ -220,7 +242,6 @@ def crear_expediente(request):
     """, [nocaso])[0]
     nuevo = ultimo + 1
 
-    # Primera etapa
     det_etapa = single_result("""
         SELECT IDTIPOCASO2, CODETAPA
         FROM ESPECIA_ETAPA
@@ -228,7 +249,6 @@ def crear_expediente(request):
     """, [esp])
     idetapa = det_etapa[0] if det_etapa else None
 
-    # Abogados de la especialización
     abs_ = many_results("""
         SELECT A.CEDULA, A.NOMABOGADO, A.APEABOGADO
         FROM ABOGADO A
@@ -238,7 +258,6 @@ def crear_expediente(request):
     """, [esp])
     abogados = [{"ced": a[0], "nom": f"{a[1]} {a[2]}"} for a in abs_]
 
-    # Ciudades
     ciudades = many_results("""
         SELECT CODLUGAR, NOMLUGAR
         FROM LUGAR
@@ -246,7 +265,6 @@ def crear_expediente(request):
     """)
     ciudades = [{"cod": c[0], "nom": c[1]} for c in ciudades]
 
-    # Impugnaciones según especialización
     imp = many_results("""
         SELECT ID, NOMBRE
         FROM IMPUGNACION
@@ -263,40 +281,45 @@ def crear_expediente(request):
         "abogados": abogados,
         "ciudades": ciudades,
         "impugnaciones": impugnaciones,
-        "entidades": []  # se llenará cuando el usuario elija la ciudad
+        "entidades": []
     })
 
 @api_view(['POST'])
 def guardar_expediente(request):
     nocaso = request.data.get("nocaso")
-    consec = request.data.get("consec")
-    idetapa = request.data.get("idetapa")
-    codlugar = request.data.get("codlugar")
-    cedula = request.data.get("cedula")
-
-    if not (nocaso and consec and idetapa and codlugar and cedula):
+    abogado = request.data.get("abogado")
+    ciudad = request.data.get("ciudad")
+    entidad = request.data.get("entidad")
+    noEtapa = request.data.get("noEtapa", 1)
+    
+    if not (nocaso and abogado and ciudad and entidad):
         return Response({"error": "Todos los campos son obligatorios"}, status=400)
 
-    execute("""
-        INSERT INTO EXPEDIENTE
-        (NOCASO, CONSECEXPE, CODESPECIALIZACION, IDTIPOCASO2, CODLUGAR, CEDULA, FCHETAPA)
-        VALUES (%s, %s,
-           (SELECT CODESPECIALIZACION FROM CASO WHERE NOCASO=%s),
-           %s, %s, %s, SYSDATE)
-    """, [nocaso, consec, nocaso, idetapa, codlugar, cedula])
+    try:
+        # Obtener el consecutivo del expediente
+        ultimo = single_result("""
+            SELECT NVL(MAX(CONSECEXPE),0)
+            FROM EXPEDIENTE
+            WHERE NOCASO = %s
+        """, [nocaso])[0]
+        nuevo_consec = ultimo + 1
 
-    return Response({"mensaje": "Etapa guardada correctamente"})
+        # Obtener especialización del caso
+        esp = single_result("""
+            SELECT CODESPECIALIZACION FROM CASO WHERE NOCASO = %s
+        """, [nocaso])[0]
 
-@api_view(['GET'])
-def get_abogados(request):
-    esp = request.GET.get("esp")  # opcional, filtrar por especialización
-    query = """
-        SELECT A.CEDULA, A.NOMABOGADO, A.APEABOGADO
-        FROM ABOGADO A
-    """
-    params = []
-    if esp:
-        query += " JOIN ABOGADO_ESPECIALIZACION AE ON A.CEDULA = AE.CEDULA WHERE AE.CODESPECIALIZACION = %s"
-        params = [esp]
-    abogados = many_results(query, params)
-    return Response([{"cedula": a[0], "nom": f"{a[1]} {a[2]}"} for a in abogados])
+        execute("""
+            INSERT INTO EXPEDIENTE
+            (NOCASO, CONSECEXPE, CODESPECIALIZACION, IDTIPOCASO2, CODLUGAR, CEDULA, FCHETAPA)
+            VALUES (%s, %s, %s, %s, %s, %s, SYSDATE)
+        """, [nocaso, nuevo_consec, esp, noEtapa, entidad, abogado])
+
+        return Response({
+            "mensaje": "Expediente guardado correctamente",
+            "nuevoNo": nuevo_consec
+        })
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return Response({"error": f"Error al guardar: {str(e)}"}, status=500)
