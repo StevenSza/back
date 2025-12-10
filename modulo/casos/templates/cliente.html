@@ -3,87 +3,453 @@
 <head>
     <title>Gestión de Casos</title>
     <style>
-        .fila { display: flex; gap: 10px; margin-bottom: 10px; }
-        .columna { display: flex; flex-direction: column; margin-right: 20px; }
-        input, select, button { padding: 5px; }
-        .mensaje { color: green; }
-        .error { color: red; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        .header {
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+        }
+
+        /* Mensajes */
+        .mensaje, .error {
+            margin: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .mensaje {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Contenedor principal - dos columnas */
+        .caso-container {
+            display: flex;
+            gap: 40px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Columna general */
+        .columna {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Etiquetas */
+        label {
+            font-weight: bold;
+            margin-top: 14px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* Inputs y selects */
+        input, select {
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 6px;
+            border: 1px solid #aaa;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input:disabled, select:disabled {
+            background-color: #e9ecef;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        /* Filas flexibles */
+        .fila-label-btn, 
+        .fila-valor,
+        .fila-input {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 5px;
+        }
+
+        /* Inputs o selects que ocupan toda la fila */
+        .fila-valor input,
+        .fila-label-btn select,
+        .fila-input input {
+            flex: 1;
+        }
+
+        /* Botones */
+        .btn-lupa,
+        .btn-crear-cliente,
+        .btn-crear-caso,
+        .btn-acuerdo,
+        .btn-guardar,
+        .btn-limpiar {
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+            transition: background 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-lupa {
+            background: #444;
+            color: #fff;
+        }
+
+        .btn-crear-cliente {
+            background: #2b7bff;
+            color: #fff;
+        }
+
+        .btn-crear-caso {
+            background: #2bcc71;
+            color: #fff;
+        }
+
+        .btn-acuerdo {
+            background: #6b3b00;
+            color: #fff;
+        }
+
+        .btn-guardar {
+            margin-top: 30px;
+            background: #ff8c00;
+            color: #fff;
+            width: 130px;
+            align-self: flex-end;
+        }
+
+        .btn-limpiar {
+            margin-top: 15px;
+            background: #6c757d;
+            color: #fff;
+            width: 180px;
+            align-self: flex-end;
+        }
+
+        /* Hover para botones */
+        .btn-lupa:hover { background: #222; }
+        .btn-crear-cliente:hover { background: #1a5dcc; }
+        .btn-crear-caso:hover { background: #22b65d; }
+        .btn-acuerdo:hover { background: #533000; }
+        .btn-guardar:hover { background: #e67c00; }
+        .btn-limpiar:hover { background: #5a6268; }
+
+        /* Botones deshabilitados */
+        button:disabled {
+            background-color: #cccccc !important;
+            color: #666666 !important;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Ajustes para la fila de cliente */
+        .fila-input button {
+            flex-shrink: 0;
+        }
+
+        /* Badge para nuevo caso */
+        .badge-nuevo {
+            display: inline-block;
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        /* Loading */
+        .loading-text {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            margin-top: 20px;
+        }
+
+        /* Info adicional */
+        .info-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #004085;
+        }
+
+        .info-box ul {
+            margin: 5px 0 0 20px;
+            padding: 0;
+        }
+
+        .info-box li {
+            margin: 5px 0;
+        }
+
+        /* Select options disabled */
+        select option:disabled {
+            color: #999;
+        }
     </style>
 </head>
 <body>
-    <h1>Gestión de Casos</h1>
+    <div class="header">
+        <h1>📋 Gestión de Casos</h1>
+    </div>
 
     {% if mensaje %}
-        <p class="mensaje">{{ mensaje }}</p>
+        <div class="mensaje">✓ {{ mensaje }}</div>
     {% endif %}
     {% if error %}
-        <p class="error">{{ error }}</p>
+        <div class="error">✗ {{ error }}</div>
     {% endif %}
 
-    <!-- Buscar Cliente -->
-    <form method="post">
+    <form method="post" id="formCaso">
         {% csrf_token %}
-        <input type="hidden" name="accion" value="buscar_cliente">
-        <div class="fila">
-            <input type="text" name="nombre" placeholder="Nombre" value="{{ request.POST.nombre }}">
-            <input type="text" name="apellido" placeholder="Apellido" value="{{ request.POST.apellido }}">
-            <button type="submit">Buscar 🔍</button>
+        <input type="hidden" name="codcliente" value="{{ cliente.cod|default:'' }}">
+        <input type="hidden" name="nomcliente" value="{{ cliente.nom|default:'' }}">
+        <input type="hidden" name="apellcliente" value="{{ cliente.ape|default:'' }}">
+
+        <div class="caso-container">
+            <!-- COLUMNA IZQUIERDA -->
+            <div class="columna">
+                <!-- No. Caso -->
+                <label>No. Caso</label>
+                <div class="fila-label-btn">
+                    {% if caso_nuevo %}
+                        <input type="number" name="nocaso" value="{{ caso_nuevo.nocaso }}" readonly 
+                               style="background-color: #fff3cd; font-weight: bold; flex: 1;">
+                        <span class="badge-nuevo">NUEVO</span>
+                    {% else %}
+                        <select name="nocaso" id="selectCaso" {% if not cliente %}disabled{% endif %} 
+                                onchange="document.getElementById('formCaso').submit();" style="flex: 1;">
+                            <option value="">Seleccione caso</option>
+                            {% for c in casos_cliente %}
+                                <option value="{{ c.nocaso }}" 
+                                        {% if caso_activo and c.nocaso == caso_activo.nocaso %}selected{% endif %}>
+                                    Caso {{ c.nocaso }} {% if c.fin %}(Cerrado){% else %}(Activo){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+
+                    {% if not caso_nuevo %}
+                        <button type="submit" name="accion" value="crear_caso" class="btn-crear-caso"
+                                {% if not cliente %}disabled{% endif %}>
+                            Crear
+                        </button>
+                    {% endif %}
+                </div>
+
+                <!-- Fecha Inicio -->
+                <label>Fecha Inicio</label>
+                <input type="date" 
+                       name="fechaInicio" 
+                       value="{% if caso_nuevo %}{{ caso_nuevo.inicio }}{% elif caso_activo %}{{ caso_activo.inicio }}{% endif %}"
+                       {% if not caso_nuevo %}disabled{% endif %}
+                       required>
+
+                <!-- Fecha Fin -->
+                <label>Fecha Fin</label>
+                <input type="date" 
+                       name="fechaFin" 
+                       value="{% if caso_activo %}{{ caso_activo.fin|default:'' }}{% endif %}"
+                       disabled
+                       title="La fecha fin se actualiza automáticamente al completar los pagos">
+
+                <!-- Especialización -->
+                <label>Especialización</label>
+                <select name="especializacion" 
+                        {% if not caso_nuevo %}disabled{% endif %}
+                        required>
+                    <option value="">Seleccione</option>
+                    {% for esp in especializaciones %}
+                        <option value="{{ esp.codigo }}" 
+                                {% if caso_activo and esp.codigo == caso_activo.esp %}selected{% endif %}
+                                {% if caso_nuevo and esp.codigo == caso_nuevo.esp %}selected{% endif %}>
+                            {{ esp.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <!-- Valor -->
+                <label>Valor</label>
+                <div class="fila-valor">
+                    <input type="number" 
+                           name="valor" 
+                           value="{% if caso_nuevo %}{{ caso_nuevo.valor|default:'' }}{% elif caso_activo %}{{ caso_activo.valor|default:'' }}{% endif %}"
+                           step="0.01" 
+                           min="0"
+                           {% if not caso_nuevo %}disabled{% endif %}
+                           placeholder="0.00"
+                           required>
+                    
+                    <button type="button" 
+                            class="btn-acuerdo"
+                            disabled
+                            title="Crear acuerdo de pagos (No implementado)">
+                        Acuerdo Pago
+                    </button>
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA -->
+            <div class="columna">
+                <!-- Cliente -->
+                <label>Cliente</label>
+                <div class="fila-input">
+                    {% if cliente %}
+                        <input type="text" value="{{ cliente.nom }}" disabled>
+                        <input type="text" value="{{ cliente.ape }}" disabled>
+                    {% else %}
+                        <input type="text" name="nombre" value="{{ request.POST.nombre|default:'' }}" 
+                               placeholder="Nombre del cliente" required>
+                        <input type="text" name="apellido" value="{{ request.POST.apellido|default:'' }}" 
+                               placeholder="Apellido del cliente" required>
+                    {% endif %}
+
+                    {% if not cliente %}
+                        <button type="submit" name="accion" value="buscar_cliente" class="btn-lupa">
+                            🔍
+                        </button>
+                    {% endif %}
+
+                    <button type="button" 
+                            class="btn-crear-cliente"
+                            disabled
+                            title="Crear nuevo cliente (No implementado)">
+                        Crear
+                    </button>
+                </div>
+
+                <!-- Documento -->
+                <label>Documento</label>
+                <input type="text" 
+                       value="{% if cliente %}{{ cliente.doc }}{% endif %}" 
+                       disabled>
+
+                <!-- Botón Guardar -->
+                {% if caso_nuevo %}
+                    <button type="submit" name="accion" value="guardar_caso" class="btn-guardar">
+                        Guardar
+                    </button>
+                {% else %}
+                    <button type="button" class="btn-guardar" disabled>
+                        Guardar
+                    </button>
+                {% endif %}
+
+                <!-- Botón Limpiar/Buscar Otro -->
+                {% if cliente %}
+                    <button type="submit" name="accion" value="limpiar" class="btn-limpiar">
+                        Buscar Otro Cliente
+                    </button>
+                {% endif %}
+            </div>
         </div>
+
+        <!-- Información adicional solo cuando hay caso existente (no nuevo) -->
+        {% if cliente and not caso_nuevo %}
+        <div style="max-width: 1400px; margin: 0 auto; padding: 0 20px 20px;">
+            <div class="info-box">
+                <strong>ℹ️ Información:</strong>
+                <ul>
+                    <li>Los casos existentes solo se pueden <strong>consultar</strong>, no modificar.</li>
+                    <li>Para crear un nuevo caso, haga clic en <strong>"Crear"</strong>.</li>
+                    <li>La fecha fin se establecerá automáticamente al completar el último pago.</li>
+                    <li>El botón "Acuerdo Pago" estará disponible una vez guardado el caso.</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
     </form>
 
-    {% if cliente %}
-    <h2>Cliente: {{ cliente.nom }} {{ cliente.ape }} - Documento: {{ cliente.doc }}</h2>
+    <script>
+        // Validación del formulario antes de enviar
+        document.getElementById('formCaso').addEventListener('submit', function(e) {
+            const accion = e.submitter?.name === 'accion' ? e.submitter.value : null;
+            
+            // Validación para guardar caso
+            if (accion === 'guardar_caso') {
+                const especializacion = document.querySelector('select[name="especializacion"]').value;
+                const valor = document.querySelector('input[name="valor"]').value;
+                const fechaInicio = document.querySelector('input[name="fechaInicio"]').value;
+                
+                if (!especializacion || !valor || !fechaInicio) {
+                    e.preventDefault();
+                    alert('⚠️ Todos los campos son obligatorios (Especialización, Valor y Fecha Inicio)');
+                    return false;
+                }
+                
+                if (parseFloat(valor) <= 0) {
+                    e.preventDefault();
+                    alert('⚠️ El valor debe ser mayor a cero.');
+                    return false;
+                }
+                
+                return confirm('¿Confirma que desea guardar este caso?');
+            }
 
-    <!-- Crear Caso -->
-    <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="accion" value="crear_caso">
-        <input type="hidden" name="codcliente" value="{{ cliente.cod }}">
-        <input type="hidden" name="nomcliente" value="{{ cliente.nom }}">
-        <input type="hidden" name="apellcliente" value="{{ cliente.ape }}">
-        <button type="submit">Crear Nuevo Caso</button>
-    </form>
+            // Validación para buscar cliente
+            if (accion === 'buscar_cliente') {
+                const nombre = document.querySelector('input[name="nombre"]').value;
+                const apellido = document.querySelector('input[name="apellido"]').value;
+                
+                if (!nombre || !apellido) {
+                    e.preventDefault();
+                    alert('⚠️ Debe ingresar nombre y apellido para buscar.');
+                    return false;
+                }
+            }
 
-    <!-- Seleccionar Caso -->
-    <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="accion" value="guardar_caso">
-        <input type="hidden" name="codcliente" value="{{ cliente.cod }}">
-        <div class="fila">
-            <label>No. Caso:</label>
-            <select name="nocaso">
-                {% for c in casos_cliente %}
-                    <option value="{{ c.nocaso }}" {% if caso_activo and c.nocaso == caso_activo.nocaso %}selected{% endif %}>
-                        Caso {{ c.nocaso }} {% if c.fin %}(Cerrado){% else %}(Activo){% endif %}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
+            // Para limpiar formulario
+            if (accion === 'limpiar') {
+                return confirm('¿Desea buscar otro cliente? Se perderán los datos actuales.');
+            }
+        });
 
-        <div class="fila">
-            <label>Fecha Inicio:</label>
-            <input type="date" name="fechaInicio" value="{{ caso_activo.inicio|default:'' }}">
-        </div>
-
-        <div class="fila">
-            <label>Especialización:</label>
-            <select name="especializacion">
-                <option value="">Seleccione</option>
-                {% for esp in especializaciones %}
-                    <option value="{{ esp.codigo }}" {% if caso_activo and esp.codigo == caso_activo.esp %}selected{% endif %}>
-                        {{ esp.nombre }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="fila">
-            <label>Valor:</label>
-            <input type="number" name="valor" value="{{ caso_activo.valor|default:'' }}" step="0.01">
-        </div>
-
-        <button type="submit">Guardar Caso</button>
-    </form>
-    {% endif %}
+        // Auto-focus en el primer campo vacío
+        window.addEventListener('load', function() {
+            const primerInput = document.querySelector('input:not([disabled]):not([type="hidden"])');
+            if (primerInput) {
+                primerInput.focus();
+            }
+        });
+    </script>
 </body>
 </html>

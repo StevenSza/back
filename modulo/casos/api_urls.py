@@ -10,6 +10,7 @@ urlpatterns = [
     path('crear_caso/', views.crear_caso, name='crear_caso'),
     path('guardar_caso/', views.guardar_caso, name='guardar_caso'),
     path('buscar_caso/<int:nocaso>/', views.buscar_caso, name='buscar_caso_expediente'),
+    path('caso/<int:nocaso>/', views.buscar_caso_por_numero, name='buscar_caso_numero'),
 
     # ====================================================
     #   EXPEDIENTES
